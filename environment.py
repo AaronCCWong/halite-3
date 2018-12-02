@@ -1,5 +1,6 @@
+import logging
 import torch
-from collection import deque
+from collections import deque
 
 from hlt import Direction
 
@@ -14,8 +15,9 @@ class Environment:
         self.resources = deque()
 
     def get_observation(self):
-        return torch.stack(list(self.me_states),
-                           list(self.other_states), list(self.resources))
+        return torch.stack((list(self.me_states) +
+                            list(self.other_states) +
+                            list(self.resources)))
 
     def get_actions(self):
         return [Direction.North, Direction.South, Direction.East,
@@ -29,16 +31,16 @@ class Environment:
         current_resources = torch.zeros(self.map_height, self.map_width)
         current_state_me = torch.zeros(self.map_height, self.map_width)
         current_state_other = torch.zeros(self.map_height, self.map_width)
-        for row_idx, row in enumerate(game_map.cells):
+        for row_idx, row in enumerate(game_map._cells):
             for col_idx, cell in enumerate(row):
                 current_resources[row_idx][col_idx] = cell.halite_amount
-                if self.me.has_ship(cell.ship.id):
+                if cell.ship and self.me.has_ship(cell.ship.id):
                     current_state_me[row_idx][col_idx] = 1
                 else:
                     current_state_other[row_idx][col_idx] = 1
 
         # drop very old data
-        if self.me_states >= self.turns:
+        if len(self.me_states) >= self.turns:
             self.me_states.popleft()
             self.other_states.popleft()
             self.resources.popleft()

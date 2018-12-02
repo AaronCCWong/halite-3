@@ -1,3 +1,4 @@
+import logging
 import random
 from hlt import Direction
 
@@ -10,5 +11,5 @@ class Agent:
         if random.uniform(0, 1) < epsilon:
             random_action = random.choice(actions)
             return ship.move(random_action)
-
-        action = net(obs)
+        return ship.stay_still()
+        # action = net(obs)

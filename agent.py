@@ -1,9 +1,13 @@
-from environment import Environment
+import random
+from hlt import Direction
 
 class Agent:
-    def __init__(self):
-        self.total_reward = 0.0
+    def step(self, state, ship, epsilon):
+        obs = state.get_observation()
+        actions = state.get_actions()
 
-    def step(self, env):
-        current_observation = env.get_observation()
-        actions = env.get_actions()
+        # use decaying epsilon-greedy
+        if random.uniform(0, 1) < epsilon:
+            random_action = random.choice(actions)
+            return ship.move(random_action)
+        return ship.stay_still()

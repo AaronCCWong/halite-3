@@ -2,7 +2,7 @@ import random
 from hlt import Direction
 
 class Agent:
-    def step(self, state, ship, epsilon):
+    def step(self, net, state, ship, epsilon):
         obs = state.get_observation()
         actions = state.get_actions()
 
@@ -10,4 +10,5 @@ class Agent:
         if random.uniform(0, 1) < epsilon:
             random_action = random.choice(actions)
             return ship.move(random_action)
-        return ship.stay_still()
+
+        action = net(obs)

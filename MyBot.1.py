@@ -6,16 +6,24 @@ from hlt import constants
 from hlt.positionals import Direction, Position
 
 from agent import Agent
+from dqn import DQN
 from environment import Environment
 
 """ <<<Game Begin>>> """
 epsilon = 0.8
 
 agent_map = {}
-env = Environment()
 
-# This game object contains the initial game state.
 game = hlt.Game()
+
+map_height = game.game_map.height
+map_width = game.game_map.width
+num_actions = 5 # need to reconsider this...
+turns = 2
+
+env = Environment(map_height, map_width, turns)
+net = DQN(map_height * map_width, turns, num_actions)
+
 # At this point "game" variable is populated with initial map data.
 # This is a good place to do computationally expensive start-up pre-processing.
 # As soon as you call "ready" function below, the 2 second per turn timer will start.
@@ -40,14 +48,13 @@ while True:
     # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
     #   end of the turn.
     command_queue = []
-    taken_position = {}
 
     for ship in me.get_ships():
         if ship.id not in agent_map:
-            agent_map[ship.id] = Agent(ship, epsilon)
+            agent_map[ship.id] = Agent()
         agent = agent_map[ship.id]
 
-        move = agent.step(env)
+        move = agent.step(net, env, ship, epsilon)
         command_queue.append(move)
 
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.

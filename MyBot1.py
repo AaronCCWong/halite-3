@@ -73,6 +73,7 @@ while True:
         loss.backward()
         optimizer.step()
 
+        writer.add_scalar('loss', loss.item(), game.turn_number)
         logging.info('Saving model parameters')
         torch.save(net.state_dict(), 'model/model.pth')
 

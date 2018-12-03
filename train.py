@@ -2,6 +2,7 @@ import argparse, json, subprocess
 import logging
 import torch
 import torch.nn.functional as F
+from tensorboardX import SummaryWriter
 from torch.optim import Adam
 
 from agent import Agent
@@ -34,6 +35,7 @@ map_height = 32
 num_actions = 5
 turns = 2
 
+writer = SummaryWriter()
 
 net = DQN(map_height*map_width, turns, num_actions)
 target_net = DQN(map_height*map_width, turns, num_actions)
@@ -54,6 +56,7 @@ def train(args):
         results = subprocess.check_output(command)
         results = json.loads(results)
         print(f"Player stats from match:\n{results['stats']}")
+    writer.close()
 
 
 def get_loss(batch, net, target_net, gamma):

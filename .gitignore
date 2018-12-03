@@ -12,3 +12,4 @@ __pycache__/
 replays/
 .vscode
 model/model*
+runs/

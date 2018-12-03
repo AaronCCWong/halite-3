@@ -7,7 +7,7 @@ from hlt import constants
 from hlt.positionals import Direction, Position
 
 from experiencebuffer import Experience
-from train import agent, args, buffer, env, get_loss, map_height, map_width, net, optimizer, target_net
+from train import agent, args, buffer, env, get_loss, map_height, map_width, net, optimizer, target_net, writer
 
 """ <<<Game Begin>>> """
 game = hlt.Game()
@@ -56,6 +56,8 @@ while True:
 
         experience = Experience(current_obs, torch.tensor(action_idx), torch.tensor(reward), new_obs)
         buffer.append(experience)
+        writer.add_scalar('epsilon', args.epsilon, game.turn_number)
+        writer.add_scalar('reward', reward, game.turn_number)
 
     # can we get the network to decide when to spawn more ships?
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.

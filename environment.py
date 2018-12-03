@@ -4,15 +4,16 @@ from collections import deque
 
 from hlt import Direction
 
+
 class Environment:
     def __init__(self, height, width, turns):
         self.turns = turns
         self.map_height = height
         self.map_width = width
-        self.obs = torch.zeros(height, width, turns*2)
-        self.me_states = deque()
-        self.other_states = deque()
-        self.resources = deque()
+        self.me_states = deque(maxlen=turns)
+        self.other_states = deque(maxlen=turns)
+        self.resources = deque(maxlen=turns)
+        self._initialize_state()
 
     def get_observation(self):
         return torch.stack((list(self.me_states) +
@@ -27,6 +28,12 @@ class Environment:
         self.me = me
         self._update_state(game_map)
 
+    def _initialize_state(self):
+        for _ in range(self.turns):
+            self.me_states.append(torch.zeros(self.map_height, self.map_width))
+            self.other_states.append(torch.zeros(self.map_height, self.map_width))
+            self.resources.append(torch.zeros(self.map_height, self.map_width))
+
     def _update_state(self, game_map):
         current_resources = torch.zeros(self.map_height, self.map_width)
         current_state_me = torch.zeros(self.map_height, self.map_width)
@@ -36,14 +43,8 @@ class Environment:
                 current_resources[row_idx][col_idx] = cell.halite_amount
                 if cell.ship and self.me.has_ship(cell.ship.id):
                     current_state_me[row_idx][col_idx] = 1
-                else:
+                elif cell.ship:
                     current_state_other[row_idx][col_idx] = 1
-
-        # drop very old data
-        if len(self.me_states) >= self.turns:
-            self.me_states.popleft()
-            self.other_states.popleft()
-            self.resources.popleft()
 
         self.me_states.append(current_state_me)
         self.other_states.append(current_state_other)

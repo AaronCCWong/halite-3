@@ -1,15 +1,24 @@
 import logging
+import torch
 import random
+
 from hlt import Direction
 
+from experiencebuffer import Experience
+
+
 class Agent:
-    def step(self, net, state, ship, epsilon):
-        obs = state.get_observation()
-        actions = state.get_actions()
+    def issue_command(self, net, env, ship, epsilon):
+        obs = env.get_observation()
+        actions = env.get_actions()
 
         # use decaying epsilon-greedy
         if random.uniform(0, 1) < epsilon:
-            random_action = random.choice(actions)
-            return ship.move(random_action)
-        return ship.stay_still()
-        # action = net(obs)
+            action_idx = random.choice(range(len(actions)))
+            action = actions[action_idx]
+            return action_idx, action, ship.move(action)
+
+        q_values = net(obs)
+        _, action_idx = torch.max(q_values, dim=1)
+        action = actions[action_idx.item()]
+        return action_idx.item(), action, ship.move(action)

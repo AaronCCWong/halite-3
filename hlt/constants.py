@@ -6,6 +6,7 @@ They are strictly informational.
 
 
 def load_constants(constants):
+    global DOCK
     """
     Load constants from JSON given by the game engine.
     """
@@ -13,6 +14,8 @@ def load_constants(constants):
     global EXTRACT_RATIO, MOVE_COST_RATIO
     global INSPIRATION_ENABLED, INSPIRATION_RADIUS, INSPIRATION_SHIP_COUNT
     global INSPIRED_EXTRACT_RATIO, INSPIRED_BONUS_MULTIPLIER, INSPIRED_MOVE_COST_RATIO
+
+    DOCK = 'DOCK'
 
     """The cost to build a single ship."""
     SHIP_COST = constants['NEW_ENTITY_ENERGY_COST']

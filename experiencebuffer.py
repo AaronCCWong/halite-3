@@ -4,7 +4,7 @@ from collections import deque, namedtuple
 
 
 Experience = namedtuple('Experience',
-                        field_names=['state', 'action', 'reward', 'new_state'])
+                        field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
 
 class ExperienceBuffer:
@@ -19,6 +19,6 @@ class ExperienceBuffer:
 
     def sample(self, batch_size):
         random_indices = np.random.choice(len(self.buffer), batch_size, replace=False)
-        states, actions, rewards, new_states = zip(*[self.buffer[idx] for idx in random_indices])
+        states, actions, rewards, dones, new_states = zip(*[self.buffer[idx] for idx in random_indices])
         return torch.stack(states), torch.stack(actions), torch.stack(rewards), \
-               torch.stack(new_states)
+               torch.stack(dones), torch.stack(new_states)

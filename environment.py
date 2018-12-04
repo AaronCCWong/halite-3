@@ -2,7 +2,7 @@ import logging
 import torch
 from collections import deque
 
-from hlt import Direction
+from hlt import constants, Direction
 
 
 class Environment:
@@ -22,7 +22,7 @@ class Environment:
 
     def get_actions(self):
         return [Direction.North, Direction.South, Direction.East,
-                Direction.West, Direction.Still]
+                Direction.West, Direction.Still, constants.DOCK]
 
     def update_observations(self, game_map, me):
         self.me = me

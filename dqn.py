@@ -23,5 +23,5 @@ class DQN(nn.Module):
         obs = F.relu(self.conv3(obs))
 
         obs = obs.view(obs.size(0), -1)
-        obs = self.fc(obs)
+        obs = F.relu(self.fc(obs))
         return self.output(obs)

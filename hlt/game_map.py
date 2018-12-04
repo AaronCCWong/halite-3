@@ -184,6 +184,10 @@ class GameMap:
         """
         return Position(position.x % self.width, position.y % self.height)
 
+    def calculate_destination(self, ship, move):
+        x, y = ship.position.x, ship.position.y
+        return Position((x + move[0]) % self.width, (y + move[1]) % self.height)
+
     @staticmethod
     def _get_target_direction(source, target):
         """

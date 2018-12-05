@@ -55,6 +55,7 @@ while True:
             destination = me.shipyard.position
             action_idx = 5
         else:
+            go_home[ship.id] = False
             current_epsilon = max(args.epsilon_end,
                                 args.epsilon - frame_num * (args.epsilon - args.epsilon_end) / args.epsilon_decay)
             action_idx, action = agent.issue_command(net, env, current_epsilon)

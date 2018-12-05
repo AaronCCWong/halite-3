@@ -13,12 +13,14 @@ class Environment:
         self.me_states = deque(maxlen=turns)
         self.other_states = deque(maxlen=turns)
         self.resources = deque(maxlen=turns)
+        self.me_depots = deque(maxlen=turns)
         self._initialize_state()
 
     def get_observation(self):
         return torch.stack((list(self.me_states) +
                             list(self.other_states) +
-                            list(self.resources)))
+                            list(self.resources) +
+                            list(self.me_depots)))
 
     def get_actions(self):
         return [Direction.North, Direction.South, Direction.East,
@@ -26,18 +28,20 @@ class Environment:
 
     def update_observations(self, game_map, me):
         self.me = me
-        self._update_state(game_map)
+        self._update_state(me, game_map)
 
     def _initialize_state(self):
         for _ in range(self.turns):
             self.me_states.append(torch.zeros(self.map_height, self.map_width))
             self.other_states.append(torch.zeros(self.map_height, self.map_width))
             self.resources.append(torch.zeros(self.map_height, self.map_width))
+            self.me_depots.append(torch.zeros(self.map_height, self.map_width))
 
-    def _update_state(self, game_map):
+    def _update_state(self, me, game_map):
         current_resources = torch.zeros(self.map_height, self.map_width)
         current_state_me = torch.zeros(self.map_height, self.map_width)
         current_state_other = torch.zeros(self.map_height, self.map_width)
+        current_depots_me = torch.zeros(self.map_height, self.map_width)
         for row_idx, row in enumerate(game_map._cells):
             for col_idx, cell in enumerate(row):
                 current_resources[row_idx][col_idx] = cell.halite_amount
@@ -46,6 +50,11 @@ class Environment:
                 elif cell.ship:
                     current_state_other[row_idx][col_idx] = 1
 
+        current_depots_me[me.shipyard.position.x][me.shipyard.position.y] = 1
+        for dropoff in me.get_dropoffs():
+            current_depots_me[dropoff.position.x][dropoff.position.y] = 1
+
         self.me_states.append(current_state_me)
         self.other_states.append(current_state_other)
         self.resources.append(current_resources)
+        self.me_depots.append(current_depots_me)

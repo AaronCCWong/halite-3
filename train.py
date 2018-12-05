@@ -44,8 +44,8 @@ writer = SummaryWriter()
 net = DQN(map_dim*map_dim, turns, num_actions)
 target_net = DQN(map_dim*map_dim, turns, num_actions)
 
-net.load_state_dict(torch.load('model/model_5.pth'))
-target_net.load_state_dict(torch.load('model/model_5.pth'))
+# net.load_state_dict(torch.load('model/model_5.pth'))
+# target_net.load_state_dict(torch.load('model/model_5.pth'))
 
 optimizer = Adam(net.parameters(), lr=args.lr)
 

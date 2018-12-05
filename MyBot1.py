@@ -51,7 +51,7 @@ while True:
         new_env = copy.deepcopy(env)
         new_state = torch.zeros(new_env.map_height, new_env.map_width)
 
-        if go_home[ship.id]:
+        if go_home[ship.id] and not game_map[me.shipyard.position].is_occupied:
             destination = me.shipyard.position
             action_idx = 5
         else:
@@ -67,10 +67,11 @@ while True:
         movement = game_map.naive_navigate(ship, destination)
         command_queue.append(ship.move(movement))
 
+        next_pos = Position(ship.position.x + movement[0], ship.position.y + movement[1])
+
         new_state[ship.position.x][ship.position.y] = 0
-        new_state[movement[0]][movement[1]] = 1
-        # need to update this
-        reward = float(ship.halite_amount) if me.shipyard.position == destination else 0.0
+        new_state[next_pos.x][next_pos.y] = 1
+        reward = float(ship.halite_amount) if me.shipyard.position == next_pos else 0.0
 
         new_env.me_states.append(new_state)
         new_obs = new_env.get_observation()

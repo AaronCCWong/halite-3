@@ -6,12 +6,12 @@ import hlt
 from hlt import constants
 from hlt.positionals import Direction, Position
 
-from experiencebuffer import Experience
-from train import (agent, args, buffer, env, get_loss, map_dim,
+from experience_buffer import Experience
+from train import (agent, args, buffer, env, device, get_loss, map_dim,
                    net, optimizer, target_net, writer)
 
 
-with open('data.json', 'r') as f:
+with open('data/data.json', 'r') as f:
     data = json.load(f)
 
 if data['game_num'] > 0:
@@ -24,6 +24,7 @@ game = hlt.Game()
 game.ready("DQN")
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 
+all_rewards = []
 go_home = {}
 """ <<<Game Loop>>> """
 while True:
@@ -47,7 +48,7 @@ while True:
             go_home[ship.id] = False
 
         new_env = copy.deepcopy(env)
-        new_state = torch.zeros(map_dim, map_dim)
+        new_state = torch.zeros(map_dim, map_dim).to(device)
 
         if go_home[ship.id] and not game_map[me.shipyard.position].is_occupied:
             destination = me.shipyard.position
@@ -73,15 +74,15 @@ while True:
         # calculate reward for action
         if me.shipyard.position == next_pos:
             halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-            reward = -100.0 if halite_deposit_amount <= 100 else halite_deposit_amount
+            reward = -1.0 if halite_deposit_amount <= 100 else 1.0
         elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
-            reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
+            reward = -1.0
         elif game_map[ship.position].halite_amount == 0:
-            reward = -100.0
+            reward = -1.0
         elif action == Direction.Still:
-            reward = 0.25 * game_map[ship.position].halite_amount
+            reward = 1.0
         else:
-            reward = 0 - (0.1 * game_map[ship.position].halite_amount)
+            reward = -1.0
         rewards.append(reward)
 
         new_env.me_states.append(new_state)
@@ -90,13 +91,14 @@ while True:
         # save experience into buffer
         is_done = game.turn_number == data['num_turns_per_game']
         current_obs = env.get_observation()
-        experience = Experience(current_obs, torch.tensor(action_idx),
-                                torch.tensor(reward), torch.tensor(is_done), new_obs)
+        experience = Experience(current_obs, torch.tensor(action_idx).to(device),
+                                torch.tensor(reward).to(device), torch.tensor(is_done).to(device), new_obs)
         buffer.append(experience)
 
     if len(rewards) > 0:
         writer.add_scalar('epsilon', current_epsilon, frame_num)
         writer.add_scalar('reward', sum(rewards) / float(len(rewards)), frame_num)
+        all_rewards += rewards
 
     # can we get the network to decide when to spawn more ships?
     if game.turn_number <= data['num_turns_per_game'] // 4 and \
@@ -119,5 +121,9 @@ while True:
         writer.add_scalar('loss', loss.item(), frame_num)
         logging.info('Saving model parameters')
         torch.save(net.state_dict(), 'model/model_{}.pth'.format(data['game_num']))
+
+    if game.turn_number == data['num_turns_per_game']:
+        with open('data/total_reward.json', 'w') as f:
+            json.dump(sum(rewards), f)
 
     game.end_turn(command_queue)

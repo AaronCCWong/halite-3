@@ -4,8 +4,6 @@ import random
 
 from hlt import Direction
 
-from experiencebuffer import Experience
-
 
 class Agent:
     def issue_command(self, net, env, epsilon):

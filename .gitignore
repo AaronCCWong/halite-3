@@ -14,4 +14,5 @@ replays/
 model/model*
 runs/
 data.json
+total_reward.json
 .DS_Store

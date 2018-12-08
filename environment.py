@@ -5,6 +5,9 @@ from collections import deque
 from hlt import constants, Direction
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 class Environment:
     def __init__(self, map_dim, turns):
         self.turns = turns
@@ -14,8 +17,8 @@ class Environment:
         self.me_states = deque(maxlen=turns)
         self.other_states = deque(maxlen=turns)
         self.resources = deque(maxlen=turns)
-        self.me_depots = torch.zeros(self.map_dim, self.map_dim)
-        self.ship_layer = torch.zeros(self.map_dim, self.map_dim)
+        self.me_depots = torch.zeros(self.map_dim, self.map_dim).to(device)
+        self.ship_layer = torch.zeros(self.map_dim, self.map_dim).to(device)
 
         # initialize
         self._initialize_state()
@@ -32,7 +35,7 @@ class Environment:
                 Direction.West, Direction.Still, constants.DOCK]
 
     def add_ship_layer(self, ship):
-        self.ship_layer = torch.zeros(self.map_dim, self.map_dim)
+        self.ship_layer = torch.zeros(self.map_dim, self.map_dim).to(device)
         self.ship_layer[ship.position.x][ship.position.y] = 1
 
     def update_observations(self, game_map, me):
@@ -41,15 +44,15 @@ class Environment:
 
     def _initialize_state(self):
         for _ in range(self.turns):
-            self.me_states.append(torch.zeros(self.map_dim, self.map_dim))
-            self.other_states.append(torch.zeros(self.map_dim, self.map_dim))
-            self.resources.append(torch.zeros(self.map_dim, self.map_dim))
+            self.me_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
+            self.other_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
+            self.resources.append(torch.zeros(self.map_dim, self.map_dim).to(device))
 
     def _update_state(self, me, game_map):
-        current_resources = torch.zeros(self.map_dim, self.map_dim)
-        current_state_me = torch.zeros(self.map_dim, self.map_dim)
-        current_state_other = torch.zeros(self.map_dim, self.map_dim)
-        current_depots_me = torch.zeros(self.map_dim, self.map_dim)
+        current_resources = torch.zeros(self.map_dim, self.map_dim).to(device)
+        current_state_me = torch.zeros(self.map_dim, self.map_dim).to(device)
+        current_state_other = torch.zeros(self.map_dim, self.map_dim).to(device)
+        current_depots_me = torch.zeros(self.map_dim, self.map_dim).to(device)
         for row_idx, row in enumerate(game_map._cells):
             for col_idx, cell in enumerate(row):
                 current_resources[row_idx][col_idx] = cell.halite_amount

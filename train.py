@@ -7,7 +7,8 @@ from torch.optim import Adam
 from agent import Agent
 from dqn import DQN
 from environment import Environment
-from experiencebuffer import Experience, ExperienceBuffer
+from experience_buffer import ExperienceBuffer
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--replay-size', type=int, default=1000,
@@ -20,7 +21,7 @@ parser.add_argument('--epsilon', type=float, default=0.9,
                     help='epsilon greedy probability (default: 0.9)')
 parser.add_argument('--epsilon-end', type=float, default=0.1,
                     help='epsilon greedy probability (default: 0.1)')
-parser.add_argument('--epsilon-decay', type=int, default=10**4,
+parser.add_argument('--epsilon-decay', type=int, default=10**3,
                     help='amount to decay epsilon by each turn (default: 100)')
 parser.add_argument('--games', type=int, default=10,
                     help='number of games to play (default: 10)')
@@ -33,6 +34,8 @@ parser.add_argument('--sync-target', type=int, default=1000,
 args = parser.parse_args()
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # map size, leaving fixed for now
 map_dim = 32
 # arbitrarily chosen constants
@@ -42,7 +45,9 @@ turns = 2
 writer = SummaryWriter()
 
 net = DQN(turns, num_actions)
+net.to(device)
 target_net = DQN(turns, num_actions)
+target_net.to(device)
 
 optimizer = Adam(net.parameters(), lr=args.lr)
 
@@ -60,8 +65,8 @@ def train(args):
     for game_num in range(args.games):
         print('Starting game ({})'.format(game_num))
         data['game_num'] = game_num
-        with open('data.json', 'w') as outfile:
-            json.dump(data, outfile)
+        with open('data/data.json', 'w') as f:
+            json.dump(data, f)
 
         command = "./halite --replay-directory ./replays/ --width 32 --height 32 --no-timeout --results-as-json".split()
         command.append("python3 MyBot.py")
@@ -76,6 +81,9 @@ def train(args):
             data['score'] = results['stats']['1']['score']
             data['best_game'] = game_num
             print('Saved game ({}) as the best game so far'.format(game_num))
+
+        reward = json.load(open('data/total_reward.json', 'r'))
+        writer.add_scalar('episode reward', reward, game_num)
     writer.close()
 
 

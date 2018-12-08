@@ -21,7 +21,8 @@ with open('data/data.json', 'r') as f:
 if data['game_num'] > 0:
     with open('data/buffer.pkl', 'rb') as f:
         buffer = pickle.load(f)
-    model_params = torch.load('model/model_{}.pth'.format(data['best_game']))
+    # model_params = torch.load('model/model_{}.pth'.format(data['best_game']))
+    model_params = torch.load('model/model_{}.pth'.format(data['game_num'] - 1))
     net.load_state_dict(model_params)
     target_net.load_state_dict(model_params)
 
@@ -80,15 +81,18 @@ while True:
         # calculate reward for action
         if me.shipyard.position == next_pos:
             halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-            reward = -1.0 if halite_deposit_amount <= 100 else 1.0
+            reward = -10.0 if halite_deposit_amount <= 100 else halite_deposit_amount
         elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
-            reward = -1.0
-        elif game_map[ship.position].halite_amount == 0:
-            reward = -1.0
+            reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
         elif action == Direction.Still:
-            reward = 1.0
+            if ship.position == me.shipyard.position:
+                reward = -10.0
+            else:
+                reward = 0.25 * game_map[ship.position].halite_amount
+        elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
+            reward = 10.0
         else:
-            reward = -1.0
+            reward = 0 - (0.1 * game_map[ship.position].halite_amount)
         rewards.append(reward)
 
         new_env.me_states.append(new_state)

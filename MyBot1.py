@@ -1,5 +1,6 @@
 import copy, json, math, random
 import logging
+import pickle
 import torch
 
 import hlt
@@ -7,14 +8,19 @@ from hlt import constants
 from hlt.positionals import Direction, Position
 
 from experience_buffer import Experience
-from train import (agent, args, buffer, env, device, get_loss, map_dim,
+from train import (agent, args, buffer, env, get_loss, map_dim,
                    net, optimizer, target_net, writer)
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 with open('data/data.json', 'r') as f:
     data = json.load(f)
 
 if data['game_num'] > 0:
+    with open('data/buffer.pkl', 'rb') as f:
+        buffer = pickle.load(f)
     model_params = torch.load('model/model_{}.pth'.format(data['best_game']))
     net.load_state_dict(model_params)
     target_net.load_state_dict(model_params)
@@ -125,5 +131,7 @@ while True:
     if game.turn_number == data['num_turns_per_game']:
         with open('data/total_reward.json', 'w') as f:
             json.dump(sum(rewards), f)
+        with open('data/buffer.pkl', 'wb') as f:
+            pickle.dump(buffer, f)
 
     game.end_turn(command_queue)

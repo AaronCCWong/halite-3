@@ -10,17 +10,17 @@ from environment import Environment
 from experiencebuffer import Experience, ExperienceBuffer
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--replay-size', type=int, default=100,
-                    help='number of replays to buffer (default: 100)')
-parser.add_argument('--replay-start', type=int, default=10,
-                    help='number of replays to buffer before backprop (default: 5)')
-parser.add_argument('--batch-size', type=int, default=8,
-                    help='batch size to use for training (default: 16)')
+parser.add_argument('--replay-size', type=int, default=1000,
+                    help='number of replays to buffer (default: 1000)')
+parser.add_argument('--replay-start', type=int, default=150,
+                    help='number of replays to buffer before backprop (default: 150)')
+parser.add_argument('--batch-size', type=int, default=100,
+                    help='batch size to use for training (default: 100)')
 parser.add_argument('--epsilon', type=float, default=0.9,
                     help='epsilon greedy probability (default: 0.9)')
-parser.add_argument('--epsilon-end', type=float, default=0.02,
-                    help='epsilon greedy probability (default: 0.02)')
-parser.add_argument('--epsilon-decay', type=int, default=10**3,
+parser.add_argument('--epsilon-end', type=float, default=0.1,
+                    help='epsilon greedy probability (default: 0.1)')
+parser.add_argument('--epsilon-decay', type=int, default=10**4,
                     help='amount to decay epsilon by each turn (default: 100)')
 parser.add_argument('--games', type=int, default=10,
                     help='number of games to play (default: 10)')
@@ -28,8 +28,8 @@ parser.add_argument('--lr', type=float, default=1e-4,
                     help='learning rate (default: 1e-4)')
 parser.add_argument('--gamma', type=float, default=0.90,
                     help='learning rate (default: 0.90)')
-parser.add_argument('--sync-target', type=int, default=100,
-                    help='number of frames before syncing target net (default: 100)')
+parser.add_argument('--sync-target', type=int, default=1000,
+                    help='number of frames before syncing target net (default: 1000)')
 args = parser.parse_args()
 
 
@@ -41,17 +41,14 @@ turns = 2
 
 writer = SummaryWriter()
 
-net = DQN(map_dim*map_dim, turns, num_actions)
-target_net = DQN(map_dim*map_dim, turns, num_actions)
-
-# net.load_state_dict(torch.load('model/model_5.pth'))
-# target_net.load_state_dict(torch.load('model/model_5.pth'))
+net = DQN(turns, num_actions)
+target_net = DQN(turns, num_actions)
 
 optimizer = Adam(net.parameters(), lr=args.lr)
 
 buffer = ExperienceBuffer(args.replay_size)
 agent = Agent()
-env = Environment(map_dim, map_dim, turns)
+env = Environment(map_dim, turns)
 
 
 def train(args):
@@ -61,6 +58,7 @@ def train(args):
     }
 
     for game_num in range(args.games):
+        print('Starting game ({})'.format(game_num))
         data['game_num'] = game_num
         with open('data.json', 'w') as outfile:
             json.dump(data, outfile)
@@ -73,10 +71,15 @@ def train(args):
         results = subprocess.check_output(command)
         results = json.loads(results)
         print(f"Player stats from match:\n{results['stats']}")
+
+        if 'score' not in data or ('score' in data and results['stats']['1']['score'] > data['score']):
+            data['score'] = results['stats']['1']['score']
+            data['best_game'] = game_num
+            print('Saved game ({}) as the best game so far'.format(game_num))
     writer.close()
 
 
-def get_loss(batch, net, target_net, gamma):
+def get_loss(batch, net, target_net, gamma=0.9):
     "We will calculate the loss here"
     states, actions, rewards, dones, new_states = batch
 

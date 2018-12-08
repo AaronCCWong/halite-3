@@ -14,50 +14,47 @@ from train import (agent, args, buffer, env, get_loss, map_dim,
 with open('data.json', 'r') as f:
     data = json.load(f)
 
+if data['game_num'] > 0:
+    model_params = torch.load('model/model_{}.pth'.format(data['best_game']))
+    net.load_state_dict(model_params)
+    target_net.load_state_dict(model_params)
+
 """ <<<Game Begin>>> """
 game = hlt.Game()
-
-# At this point "game" variable is populated with initial map data.
-# This is a good place to do computationally expensive start-up pre-processing.
-# As soon as you call "ready" function below, the 2 second per turn timer will start.
 game.ready("DQN")
-
-# Now that your bot is initialized, save a message to yourself in the log file with some important information.
-#   Here, you log here your id, which you can always fetch from the game object by using my_id.
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 
 go_home = {}
 """ <<<Game Loop>>> """
 while True:
-    # This loop handles each turn of the game. The game object changes every turn, and you refresh that state by
-    #   running update_frame().
     game.update_frame()
-    # You extract player metadata and the updated map metadata here for convenience.
     me = game.me
     game_map = game.game_map
 
     env.update_observations(game_map, me)
-    # A command queue holds all the commands you will run this turn. You build this list up and submit it at the
-    #   end of the turn.
+
     command_queue = []
 
-    current_obs = env.get_observation()
     frame_num = game.turn_number + data['num_turns_per_game'] * data['game_num']
     logging.info('Frame number: {}'.format(frame_num))
+
+    current_epsilon = max(args.epsilon_end,
+                          args.epsilon - frame_num * (args.epsilon - args.epsilon_end) / args.epsilon_decay)
+
+    rewards = []
     for ship in me.get_ships():
         if ship.position == me.shipyard.position:
             go_home[ship.id] = False
 
         new_env = copy.deepcopy(env)
-        new_state = torch.zeros(new_env.map_height, new_env.map_width)
+        new_state = torch.zeros(map_dim, map_dim)
 
         if go_home[ship.id] and not game_map[me.shipyard.position].is_occupied:
             destination = me.shipyard.position
             action_idx = 5
         else:
             go_home[ship.id] = False
-            current_epsilon = max(args.epsilon_end,
-                                args.epsilon - frame_num * (args.epsilon - args.epsilon_end) / args.epsilon_decay)
+            env.add_ship_layer(ship)
             action_idx, action = agent.issue_command(net, env, current_epsilon)
 
             if action == constants.DOCK:
@@ -68,25 +65,42 @@ while True:
         movement = game_map.naive_navigate(ship, destination)
         command_queue.append(ship.move(movement))
 
-        next_pos = Position(ship.position.x + movement[0], ship.position.y + movement[1])
+        next_pos = game_map.calculate_next_position(ship, movement)
 
         new_state[ship.position.x][ship.position.y] = 0
         new_state[next_pos.x][next_pos.y] = 1
-        reward = float(ship.halite_amount) if me.shipyard.position == next_pos else 0.0
+
+        # calculate reward for action
+        if me.shipyard.position == next_pos:
+            halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
+            reward = -100.0 if halite_deposit_amount <= 100 else halite_deposit_amount
+        elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
+            reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
+        elif game_map[ship.position].halite_amount == 0:
+            reward = -100.0
+        elif action == Direction.Still:
+            reward = 0.25 * game_map[ship.position].halite_amount
+        else:
+            reward = 0 - (0.1 * game_map[ship.position].halite_amount)
+        rewards.append(reward)
 
         new_env.me_states.append(new_state)
         new_obs = new_env.get_observation()
 
+        # save experience into buffer
         is_done = game.turn_number == data['num_turns_per_game']
+        current_obs = env.get_observation()
         experience = Experience(current_obs, torch.tensor(action_idx),
                                 torch.tensor(reward), torch.tensor(is_done), new_obs)
         buffer.append(experience)
+
+    if len(rewards) > 0:
         writer.add_scalar('epsilon', current_epsilon, frame_num)
-        writer.add_scalar('reward', reward, frame_num)
+        writer.add_scalar('reward', sum(rewards) / float(len(rewards)), frame_num)
 
     # can we get the network to decide when to spawn more ships?
-    # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if game.turn_number <= data['num_turns_per_game'] // 4 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+    if game.turn_number <= data['num_turns_per_game'] // 4 and \
+       me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
         command_queue.append(me.shipyard.spawn())
 
     if frame_num % args.sync_target == 0:
@@ -106,5 +120,4 @@ while True:
         logging.info('Saving model parameters')
         torch.save(net.state_dict(), 'model/model_{}.pth'.format(data['game_num']))
 
-    # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)

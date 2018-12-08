@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 
 class DQN(nn.Module):
-    def __init__(self, map_size, turns, num_actions):
+    def __init__(self, turns, num_actions):
         super(DQN, self).__init__()
         self.conv1 = nn.Conv2d(turns * 4, 32, 5)
         self.conv2 = nn.Conv2d(32, 64, 5)

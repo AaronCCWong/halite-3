@@ -13,7 +13,7 @@ class Player:
     def __init__(self, player_id, shipyard, halite=0):
         self.id = player_id
         self.shipyard = shipyard
-        self.halite_amount = halite
+        self.halite_amount = halite # score of game
         self._ships = {}
         self._dropoffs = {}
 
@@ -187,6 +187,10 @@ class GameMap:
     def calculate_destination(self, ship, move):
         x, y = ship.position.x, ship.position.y
         return Position((x + move[0]) % self.width, (y + move[1]) % self.height)
+
+    def calculate_next_position(self, ship, move):
+        pos = Position(ship.position.x + move[0], ship.position.y + move[1])
+        return self.normalize(pos)
 
     @staticmethod
     def _get_target_direction(source, target):

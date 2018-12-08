@@ -13,3 +13,4 @@ replays/
 .vscode
 model/model*
 runs/
+data.json

@@ -6,25 +6,34 @@ from hlt import constants, Direction
 
 
 class Environment:
-    def __init__(self, height, width, turns):
+    def __init__(self, map_dim, turns):
         self.turns = turns
-        self.map_height = height
-        self.map_width = width
+        self.map_dim = map_dim
+
+        # feature maps
         self.me_states = deque(maxlen=turns)
         self.other_states = deque(maxlen=turns)
         self.resources = deque(maxlen=turns)
-        self.me_depots = deque(maxlen=turns)
+        self.me_depots = torch.zeros(self.map_dim, self.map_dim)
+        self.ship_layer = torch.zeros(self.map_dim, self.map_dim)
+
+        # initialize
         self._initialize_state()
 
     def get_observation(self):
         return torch.stack((list(self.me_states) +
                             list(self.other_states) +
                             list(self.resources) +
-                            list(self.me_depots)))
+                            [self.me_depots] +
+                            [self.ship_layer]))
 
     def get_actions(self):
         return [Direction.North, Direction.South, Direction.East,
                 Direction.West, Direction.Still, constants.DOCK]
+
+    def add_ship_layer(self, ship):
+        self.ship_layer = torch.zeros(self.map_dim, self.map_dim)
+        self.ship_layer[ship.position.x][ship.position.y] = 1
 
     def update_observations(self, game_map, me):
         self.me = me
@@ -32,16 +41,15 @@ class Environment:
 
     def _initialize_state(self):
         for _ in range(self.turns):
-            self.me_states.append(torch.zeros(self.map_height, self.map_width))
-            self.other_states.append(torch.zeros(self.map_height, self.map_width))
-            self.resources.append(torch.zeros(self.map_height, self.map_width))
-            self.me_depots.append(torch.zeros(self.map_height, self.map_width))
+            self.me_states.append(torch.zeros(self.map_dim, self.map_dim))
+            self.other_states.append(torch.zeros(self.map_dim, self.map_dim))
+            self.resources.append(torch.zeros(self.map_dim, self.map_dim))
 
     def _update_state(self, me, game_map):
-        current_resources = torch.zeros(self.map_height, self.map_width)
-        current_state_me = torch.zeros(self.map_height, self.map_width)
-        current_state_other = torch.zeros(self.map_height, self.map_width)
-        current_depots_me = torch.zeros(self.map_height, self.map_width)
+        current_resources = torch.zeros(self.map_dim, self.map_dim)
+        current_state_me = torch.zeros(self.map_dim, self.map_dim)
+        current_state_other = torch.zeros(self.map_dim, self.map_dim)
+        current_depots_me = torch.zeros(self.map_dim, self.map_dim)
         for row_idx, row in enumerate(game_map._cells):
             for col_idx, cell in enumerate(row):
                 current_resources[row_idx][col_idx] = cell.halite_amount
@@ -57,4 +65,4 @@ class Environment:
         self.me_states.append(current_state_me)
         self.other_states.append(current_state_other)
         self.resources.append(current_resources)
-        self.me_depots.append(current_depots_me)
+        self.me_depots = current_depots_me

@@ -14,3 +14,4 @@ replays/
 model/model*
 runs/
 data.json
+.DS_Store

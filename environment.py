@@ -32,11 +32,12 @@ class Environment:
 
     def get_actions(self):
         return [Direction.North, Direction.South, Direction.East,
-                Direction.West, Direction.Still, constants.DOCK]
+                Direction.West, Direction.Still] #, constants.DOCK]
 
     def add_ship_layer(self, ship):
         self.ship_layer = torch.zeros(self.map_dim, self.map_dim).to(device)
         self.ship_layer[ship.position.x][ship.position.y] = 1
+        self.me_states[-1][ship.position.x][ship.position.y] = 0
 
     def update_observations(self, game_map, me):
         self.me = me

@@ -3,12 +3,12 @@ import logging
 import pickle
 import torch
 
-import hlt
 from hlt import constants
+from hlt.networking import Game
 from hlt.positionals import Direction, Position
 
-from experience_buffer import Experience
-from train import (agent, args, buffer, env, get_loss, map_dim,
+from dq_learning.experience_buffer import Experience
+from dq_learning.train import (agent, args, buffer, env, get_loss, map_dim,
                    net, optimizer, target_net, writer)
 
 
@@ -27,7 +27,7 @@ if data['game_num'] > 0:
     target_net.load_state_dict(model_params)
 
 """ <<<Game Begin>>> """
-game = hlt.Game()
+game = Game()
 game.ready("DQN")
 logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
 

@@ -4,10 +4,10 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from torch.optim import Adam
 
-from agent import Agent
-from dqn import DQN
-from environment import Environment
-from experience_buffer import ExperienceBuffer
+from .agent import Agent
+from .dqn import DQN
+from .environment import Environment
+from .experience_buffer import ExperienceBuffer
 
 
 parser = argparse.ArgumentParser()

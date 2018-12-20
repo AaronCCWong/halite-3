@@ -94,7 +94,7 @@ else:
     reward = 0 - (0.1 * game_map[ship.position].halite_amount)
 ```
 
-### Displaying collected data
+## Displaying collected data
 
 Training data is collected using tensorboardX. Refer to https://github.com/lanpa/tensorboardX
 for installation procedures. The data will be written to a folder called `runs` in this directory.
@@ -104,7 +104,12 @@ To generate graphs of the data, use the following command in this directory:
 tensorboard --logdir runs
 ```
 
-### Clearing all training related data
+## Clearing all training related data
 ```bash
 ./clear.sh
 ```
+
+## Viewing a replay
+Replays generated during training are put into the `replays` folder in this directory. The replay files
+have the `.hlt` extension. To view the replay, go to https://halite.io/watch-games and drag and drop the
+replay file into the box designated for replays.

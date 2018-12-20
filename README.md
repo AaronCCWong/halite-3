@@ -59,20 +59,20 @@ To use the reward function that gives rewards based on the scale of halite retur
 ```python3
 if me.shipyard.position == next_pos:
     hal_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-    if hal_amount > 100:
-        reward = 5.0
-    elif hal_amount > 10:
-        reward = 0.5
-    else:
-        reward = -1.0
-    elif action == Direction.Still and game_map[next_pos].halite_amount > 0:
-        reward = 1.0
-    elif action == Direction.Still and game_map[next_pos].halite_amount == 0:
-        reward = -1.0
-    elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
-        reward = 1.0
-    else:
-        reward = -1.0
+elif hal_amount > 100:
+    reward = 5.0
+elif hal_amount > 10:
+    reward = 0.5
+else:
+    reward = -1.0
+elif action == Direction.Still and game_map[next_pos].halite_amount > 0:
+    reward = 1.0
+elif action == Direction.Still and game_map[next_pos].halite_amount == 0:
+    reward = -1.0
+elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
+    reward = 1.0
+else:
+    reward = -1.0
 ```
 
 and uncomment:

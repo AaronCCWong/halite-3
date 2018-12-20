@@ -81,6 +81,22 @@ while True:
         new_state[ship.position.x][ship.position.y] = 0
         new_state[next_pos.x][next_pos.y] = 1
 
+        # calculate reward for action
+        # if me.shipyard.position == next_pos:
+        #     halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
+        #     reward = -10.0 if halite_deposit_amount <= 100 else halite_deposit_amount
+        # elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
+        #     reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
+        # elif action == Direction.Still:
+        #     if ship.position == me.shipyard.position:
+        #         reward = -10.0
+        #     else:
+        #         reward = 0.25 * game_map[ship.position].halite_amount
+        # elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
+        #     reward = 10.0
+        # else:
+        #     reward = 0 - (0.1 * game_map[ship.position].halite_amount)
+
         if me.shipyard.position == next_pos:
             hal_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
             if hal_amount > 100:
@@ -99,7 +115,6 @@ while True:
             reward = -1.0
         rewards.append(reward)
 
-
         new_env.me_states.append(new_state)
         new_obs = new_env.get_observation()
 
@@ -109,6 +124,9 @@ while True:
         experience = Experience(current_obs, torch.tensor(action_idx).to(device),
                                 torch.tensor(reward).to(device), torch.tensor(is_done).to(device), new_obs)
         buffer.append(experience)
+
+    # if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+    #     command_queue.append(me.shipyard.spawn())
 
     writer.add_scalar('epsilon', current_epsilon, frame_num)
     if len(rewards) > 0:

@@ -46,8 +46,8 @@ while True:
     command_queue = []
     taken_position = {}
 
-    # if game.turn_number == 1:
-    #     command_queue.append(me.shipyard.spawn())
+    if game.turn_number == 1:
+        command_queue.append(me.shipyard.spawn())
 
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
@@ -76,8 +76,8 @@ while True:
             command_queue.append(ship.stay_still())
 
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
-        command_queue.append(me.shipyard.spawn())
+    # if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+    #     command_queue.append(me.shipyard.spawn())
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)

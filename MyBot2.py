@@ -42,8 +42,8 @@ while True:
 
     command_queue = []
 
-    # if game.turn_number == 1:
-    #     command_queue.append(me.shipyard.spawn())
+    if game.turn_number == 1:
+        command_queue.append(me.shipyard.spawn())
 
     frame_num = game.turn_number + data['num_turns_per_game'] * data['game_num']
     logging.info('Frame number: {}'.format(frame_num))
@@ -147,7 +147,7 @@ while True:
         with open('data/avg_loss.json', 'w') as f:
             json.dump(sum(losses) / float(len(losses)), f)
 
-    if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
-        command_queue.append(me.shipyard.spawn())
+    # if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+    #     command_queue.append(me.shipyard.spawn())
 
     game.end_turn(command_queue)

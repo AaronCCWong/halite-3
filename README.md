@@ -25,7 +25,7 @@ python -m actor_critic.train --games <NUM_OF_EPISODES_TO_RUN>
 ```
 
 **Note**: The codebase is set up to use the simplified reward function, a 10x10 game map and each player
-is restricted to one ship. To change the map size, you need to go into the corresponding train.py inside
+is restricted to one ship. To change the map size, you need to go into the corresponding `train.py` inside
 actor_critic or dq_learning and change this line:
 
 ```python3

@@ -46,6 +46,9 @@ while True:
     command_queue = []
     taken_position = {}
 
+    # if game.turn_number == 1:
+    #     command_queue.append(me.shipyard.spawn())
+
     for ship in me.get_ships():
         # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
         #   Else, collect halite.

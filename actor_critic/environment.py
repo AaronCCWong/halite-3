@@ -9,14 +9,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class Environment:
-    def __init__(self, map_dim, turns):
-        self.turns = turns
+    def __init__(self, map_dim):
         self.map_dim = map_dim
 
         # feature maps
-        self.me_states = deque(maxlen=turns)
-        self.other_states = deque(maxlen=turns)
-        self.resources = deque(maxlen=turns)
+        self.me_states = deque(maxlen=1)
+        self.other_states = deque(maxlen=1)
+        self.resources = deque(maxlen=1)
         self.me_depots = torch.zeros(self.map_dim, self.map_dim).to(device)
 
         # initialize
@@ -37,10 +36,9 @@ class Environment:
         self._update_state(me, game_map)
 
     def _initialize_state(self):
-        for _ in range(self.turns):
-            self.me_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
-            self.other_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
-            self.resources.append(torch.zeros(self.map_dim, self.map_dim).to(device))
+        self.me_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
+        self.other_states.append(torch.zeros(self.map_dim, self.map_dim).to(device))
+        self.resources.append(torch.zeros(self.map_dim, self.map_dim).to(device))
 
     def _update_state(self, me, game_map):
         current_resources = torch.zeros(self.map_dim, self.map_dim).to(device)

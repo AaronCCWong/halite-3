@@ -1,4 +1,4 @@
-import copy, json, math, random
+import argparse, copy, json, math, random
 import logging
 import pickle
 import torch
@@ -9,6 +9,14 @@ from hlt.networking import Game
 from hlt.positionals import Direction, Position
 
 from actor_critic.train import (agent, args, env, map_dim, net, optimizer, writer)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--scale', action='store_true',
+                    help='reward based on scale of halite returned to base')
+parser.add_argument('--unrestricted', action='store_true',
+                    help='allow an unrestricted number of ships')
+cmdl_args = parser.parse_args()
 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -42,7 +50,7 @@ while True:
 
     command_queue = []
 
-    if game.turn_number == 1:
+    if not cmdl_args.unrestricted and game.turn_number == 1:
         command_queue.append(me.shipyard.spawn())
 
     frame_num = game.turn_number + data['num_turns_per_game'] * data['game_num']
@@ -77,37 +85,38 @@ while True:
         new_state[next_pos.x][next_pos.y] = 1
 
         # calculate reward for action
-        # if me.shipyard.position == next_pos:
-        #     halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-        #     reward = -10.0 if halite_deposit_amount <= 100 else halite_deposit_amount
-        # elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
-        #     reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
-        # elif action == Direction.Still:
-        #     if ship.position == me.shipyard.position:
-        #         reward = -10.0
-        #     else:
-        #         reward = 0.25 * game_map[ship.position].halite_amount
-        # elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
-        #     reward = 10.0
-        # else:
-        #     reward = 0 - (0.1 * game_map[ship.position].halite_amount)
-
-        if me.shipyard.position == next_pos:
-            hal_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-            if hal_amount > 100:
-                reward = 5.0
-            elif hal_amount > 10:
-                reward = 0.5
+        if cmdl_args.scale:
+            if me.shipyard.position == next_pos:
+                halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
+                reward = -10.0 if halite_deposit_amount <= 100 else halite_deposit_amount
+            elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
+                reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
+            elif action == Direction.Still:
+                if ship.position == me.shipyard.position:
+                    reward = -10.0
+                else:
+                    reward = 0.25 * game_map[ship.position].halite_amount
+            elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
+                reward = 10.0
+            else:
+                reward = 0 - (0.1 * game_map[ship.position].halite_amount)
+        else:
+            if me.shipyard.position == next_pos:
+                hal_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
+                if hal_amount > 100:
+                    reward = 5.0
+                elif hal_amount > 10:
+                    reward = 0.5
+                else:
+                    reward = -1.0
+            elif action == Direction.Still and game_map[next_pos].halite_amount > 0:
+                reward = 1.0
+            elif action == Direction.Still and game_map[next_pos].halite_amount == 0:
+                reward = -1.0
+            elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
+                reward = 1.0
             else:
                 reward = -1.0
-        elif action == Direction.Still and game_map[next_pos].halite_amount > 0:
-            reward = 1.0
-        elif action == Direction.Still and game_map[next_pos].halite_amount == 0:
-            reward = -1.0
-        elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
-            reward = 1.0
-        else:
-            reward = -1.0
         current_rewards.append(reward)
 
     if game.turn_number % 100 == 0 and len(actions) > 0:
@@ -147,7 +156,7 @@ while True:
         with open('data/avg_loss.json', 'w') as f:
             json.dump(sum(losses) / float(len(losses)), f)
 
-    # if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
-    #     command_queue.append(me.shipyard.spawn())
+    if cmdl_args.unrestricted and game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+        command_queue.append(me.shipyard.spawn())
 
     game.end_turn(command_queue)

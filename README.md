@@ -39,61 +39,6 @@ command = "./halite --replay-directory ./replays/ --width 32 --height 32 --no-ti
 You must also make sure to change the variable `map_dim` at the top of the same file and set that to 32. This may
 require parameter number changes to the models.
 
-To allow an unrestricted number of ships for each player, you must go into each of the files `MyBot.py`, `MyBot1.py`,
-and `MyBot2.py`. In those files you must comment out the lines
-
-```python3
-if game.turn_number == 1:
-    command_queue.append(me.shipyard.spawn())
-```
-
-and uncomment the lines:
-```python3
-if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
-    command_queue.append(me.shipyard.spawn())
-```
-
-The piece of code that decides the amount of reward to give can be found in the files `MyBot.py`, `MyBot1.py`, and `MyBot2.py`.
-To use the reward function that gives rewards based on the scale of halite returned to dock you must comment out:
-
-```python3
-if me.shipyard.position == next_pos:
-    hal_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-    if hal_amount > 100:
-        reward = 5.0
-    elif hal_amount > 10:
-        reward = 0.5
-    else:
-        reward = -1.0
-elif action == Direction.Still and game_map[next_pos].halite_amount > 0:
-    reward = 1.0
-elif action == Direction.Still and game_map[next_pos].halite_amount == 0:
-    reward = -1.0
-elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
-    reward = 1.0
-else:
-    reward = -1.0
-```
-
-and uncomment:
-
-```python3
-if me.shipyard.position == next_pos:
-    halite_deposit_amount = ship.halite_amount - (0.1 * game_map[ship.position].halite_amount)
-    reward = -10.0 if halite_deposit_amount <= 100 else halite_deposit_amount
-elif 0.1 * game_map[ship.position].halite_amount > ship.halite_amount:
-    reward = 0 - max(0.1 * game_map[ship.position].halite_amount, 100.0)
-elif action == Direction.Still:
-    if ship.position == me.shipyard.position:
-        reward = -10.0
-    else:
-        reward = 0.25 * game_map[ship.position].halite_amount
-elif game_map[next_pos].halite_amount > game_map[ship.position].halite_amount:
-    reward = 10.0
-else:
-    reward = 0 - (0.1 * game_map[ship.position].halite_amount)
-```
-
 ## Displaying collected data
 
 Training data is collected using tensorboardX. Refer to https://github.com/lanpa/tensorboardX

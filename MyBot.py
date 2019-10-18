@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# Python 3.6
+import argparse
 
 # Import the Halite SDK, which will let you interact with the game.
 import hlt
@@ -16,6 +15,12 @@ import math, random
 # Logging allows you to save messages for yourself. This is required because the regular STDOUT
 #   (print statements) are reserved for the engine-bot communication.
 import logging
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--unrestricted', action='store_true', 
+                    help='allow an unrestricted number of ships')
+args = parser.parse_args()
 
 """ <<<Game Begin>>> """
 
@@ -46,7 +51,7 @@ while True:
     command_queue = []
     taken_position = {}
 
-    if game.turn_number == 1:
+    if not args.unrestricted and game.turn_number == 1:
         command_queue.append(me.shipyard.spawn())
 
     for ship in me.get_ships():
@@ -76,8 +81,8 @@ while True:
             command_queue.append(ship.stay_still())
 
     # Don't spawn a ship if you currently have a ship at port, though - the ships will collide.
-    # if game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
-    #     command_queue.append(me.shipyard.spawn())
+    if args.unrestricted and game.turn_number <= 100 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+        command_queue.append(me.shipyard.spawn())
 
     # Send your moves back to the game environment, ending this turn.
     game.end_turn(command_queue)
